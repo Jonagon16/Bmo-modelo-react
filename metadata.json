@@ -1,0 +1,6 @@
+{
+  "name": "BMO Animated Face Agent",
+  "description": "Interactive animated BMO face from Adventure Time with AI-backed voice reactions, custom transitions, and dynamic SVG animations.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

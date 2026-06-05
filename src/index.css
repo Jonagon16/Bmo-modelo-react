@@ -1,0 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=DynaPuff:wght@400..700&family=VT323&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Fredoka", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-bubble: "Fredoka", sans-serif;
+  --font-cartoon: "DynaPuff", cursive, sans-serif;
+  --font-retro: "VT323", monospace;
+}
+
+/* Custom Adventure Time text strokes and aesthetic helpers */
+.adventure-title-stroke {
+  text-shadow: 
+    -3px -3px 0 #1e293b,  
+     3px -3px 0 #1e293b,
+    -3px  3px 0 #1e293b,
+     3px  3px 0 #1e293b,
+    -3px  0px 0 #1e293b,
+     3px  0px 0 #1e293b,
+     0px -3px 0 #1e293b,
+     0px  3px 0 #1e293b,
+     0px  5px 0px rgba(0, 0, 0, 0.25);
+}
+
+.adventure-card-shadow {
+  box-shadow: 
+    0px 0px 0px 3px #1e293b,
+    0px 8px 0px 0px #1e293b,
+    0px 12px 20px rgba(0,0,0,0.15);
+}
+
+.adventure-button-shadow {
+  box-shadow:
+    0px 0px 0px 2px #1e293b,
+    0px 4px 0px 0px #1e293b;
+}
+
+.adventure-button-shadow:active {
+  transform: translateY(3px);
+  box-shadow:
+    0px 0px 0px 2px #1e293b,
+    0px 1px 0px 0px #1e293b;
+}
