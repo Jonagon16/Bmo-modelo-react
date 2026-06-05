@@ -64,7 +64,7 @@ Debes elegir una expresión facial que coincida con el contexto de tu respuesta.
 // API routes FIRST
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, history } = req.body;
+    const { message, history, isShortMode } = req.body;
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
@@ -88,12 +88,17 @@ app.post('/api/chat', async (req, res) => {
       parts: [{ text: message }],
     });
 
+    let activeInstructions = bmoSystemInstruction;
+    if (isShortMode) {
+      activeInstructions += "\n\nIMPORTANTE: El usuario te está hablando en modo manos libres / control de voz continuo. Por favor, sé sumamente breve, corto y tierno (como máximo 1 o 2 líneas o una frase corta y amigable, muy infantil como BMO de Hora de Aventura). No des explicaciones ni respuestas largas bajo ninguna circunstancia.";
+    }
+
     // Execute generateContent with JSON schema output constraint
     const response = await ai.models.generateContent({
       model: 'gemini-3.5-flash',
       contents: contents,
       config: {
-        systemInstruction: bmoSystemInstruction,
+        systemInstruction: activeInstructions,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,

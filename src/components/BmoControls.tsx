@@ -20,7 +20,7 @@ import {
 interface BmoControlsProps {
   currentExpression: Expression;
   onSelectExpression: (expr: Expression) => void;
-  onAskBmoPredefined: (scenario: string) => void;
+  onAskBmoPredefined: (text: string, expression: Expression) => void;
 }
 
 export default function BmoControls({
@@ -45,27 +45,39 @@ export default function BmoControls({
     { value: 'scared', label: 'Asustado', color: 'bg-amber-500 hover:bg-amber-600 shadow-amber-700/40', icon: <Ghost className="w-4 h-4" /> },
     { value: 'glitch', label: 'Falla / Glitch', color: 'bg-zinc-800 hover:bg-zinc-900 border border-red-500 text-red-400 shadow-red-950/40', icon: <Radio className="w-4 h-4" /> },
   ];
-
   const predefinedScenarios = [
-    { title: "BMO, ¿De dónde eres?", prompt: "BMO, tell me where you come from and who made you!" },
-    { title: "Cuéntame un chiste gamer", prompt: "Tell me a video game joke as BMO!" },
-    { title: "BMO se enoja", prompt: "Say something angry because someone stole your video game controller!" },
-    { title: "BMO cansado", prompt: "Say you are getting so sleepy and yawn as BMO" },
+    { title: "🎮 ¿Quién quiere videojuegos?", text: "¿Quién quiere jugar videojuegos?", expression: "excited", episode: "Fantasía de un día lluvioso" },
+    { title: "🔋 Batería baja, apagando", text: "Batería baja. Apagando.", expression: "sleepy", episode: "Fantasía de un día lluvioso" },
+    { title: "💻 ¡Esto sí computa!", text: "¡Esto sí computa!", expression: "excited", episode: "Creadores de videos" },
+    { title: "📸 ¡BMO es una cámara!", text: "¡BMO es una cámara!", expression: "cool", episode: "La conquista de la lindura" },
+    { title: "🌟 Encontrar la luz", text: "Cuando pasan cosas malas... debemos encontrar la luz.", expression: "thinking", episode: "Escalofríos" },
+    { title: "😾 Protegeré a Finn", text: "Si alguien intenta herir a Finn... lo mataré.", expression: "angry", episode: "Amor ardiente" },
+    { title: "🥋 Inclínate ante tu sensei", text: "Inclínate ante tu sensei.", expression: "cool", episode: "¡Te tengo!" },
+    { title: "👊 ¡Golpe de BMO!", text: "¡Golpe de BMO! Si esto fuera un ataque real, estarías muerto.", expression: "angry", episode: "Guerra de cartas" },
+    { title: "🐶 ¡Perritos! ¡Perritos!", text: "¡Perritos! ¡Perritos! ¡Perritos!", expression: "love", episode: "Jake el papá" },
+    { title: "🤪 ¡Finn tontuelo!", text: "¡Finn, eres un tonto-tonto-tonto-tontuelo pajaruelo!", expression: "sad", episode: "Ser más" },
+    { title: "🐣 ¡BMO siempre regresa!", text: "Creo que estoy muriendo. ¡Pero no importa, BMO siempre regresa!", expression: "wink", episode: "Tierras Lejanas: BMO" },
+    { title: "🎉 ¡Maté a Jake! ¡Viva BMO!", text: "¡Maté a Jake! ¡Viva BMO!", expression: "excited", episode: "Aventura tonta" },
+    { title: "🎨 ¡Mi arte es un arma!", text: "¡Mi arte es un arma!", expression: "surprised", episode: "BMO Artista" },
+    { title: "☀️ No tuve sueños", text: "Buenos días a todos. Hoy no tuve ningún sueño.", expression: "idle", episode: "Despertar" },
+    { title: "🕵️‍♂️ Conozco esa mirada", text: "Conozco esa mirada... Acabas de liquidar a alguien.", expression: "cool", episode: "Modo Detective" }
   ];
 
   return (
-    <div className="w-full bg-[#1e2a22] border-2 border-teal-900 rounded-[28px] p-5 shadow-xl flex flex-col justify-between h-full select-none text-white">
+    <div className="w-full bg-[#FFFCEB] border-4 border-[#1E293B] rounded-[32px] p-5 adventure-card-shadow flex flex-col justify-between h-full select-none text-slate-800">
       <div>
         {/* Panel Header */}
-        <div className="flex items-center space-x-2 mb-4 border-b border-teal-800/50 pb-3">
-          <Wand2 className="w-5 h-5 text-teal-400 animate-pulse" />
-          <h2 className="text-sm font-bold tracking-widest text-teal-300 uppercase font-mono">
+        <div className="flex items-center space-x-2.5 mb-4 border-b-2 border-slate-200/80 pb-3">
+          <div className="p-1 px-1.5 bg-[#FFF] border-2 border-[#1E293B] rounded-lg">
+            <Wand2 className="w-4 h-4 text-amber-500 animate-bounce" />
+          </div>
+          <h2 className="text-sm font-cartoon tracking-wider text-slate-800">
             Control de Reacciones
           </h2>
         </div>
 
         {/* Reaction Tester Section */}
-        <p className="text-[10px] text-teal-200/70 mb-3 font-mono leading-relaxed">
+        <p className="text-[11px] text-slate-600 font-bold leading-relaxed mb-3">
           Haz clic para cambiar instantáneamente la expresión facial de BMO. Las transiciones de ojos, cejas, boca y mejillas son fluidas y dinámicas. 
         </p>
 
@@ -77,13 +89,13 @@ export default function BmoControls({
                 key={expr.value}
                 id={`btn-react-${expr.value}`}
                 onClick={() => onSelectExpression(expr.value)}
-                className={`py-2 px-3 rounded-xl flex items-center space-x-2 text-xs font-semibold cursor-pointer transition-all duration-300 select-none shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),_0_2px_4px_rgba(0,0,0,0.15)] active:translate-y-0.5 active:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] ${
+                className={`py-2 px-3 rounded-xl flex items-center space-x-2 text-xs font-bold cursor-pointer transition-all duration-300 select-none shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),_0_2px_4px_rgba(0,0,0,0.1)] active:translate-y-0.5 active:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] border-2 border-[#1E293B] ${
                   isActive 
-                    ? 'ring-2 ring-teal-300 ring-offset-2 ring-offset-[#1e2a22] scale-95 brightness-110' 
-                    : 'brightness-95'
+                    ? 'ring-4 ring-[#5BCAFF] brightness-110 scale-[0.98]' 
+                    : 'brightness-95 hover:brightness-100 hover:scale-[1.02]'
                 } ${expr.color}`}
               >
-                <span className={isActive ? 'text-white' : 'opacity-85'}>{expr.icon}</span>
+                <span className={isActive ? 'text-white' : 'opacity-90'}>{expr.icon}</span>
                 <span className="truncate">{expr.label}</span>
               </button>
             );
@@ -91,35 +103,45 @@ export default function BmoControls({
         </div>
 
         {/* Dynamic AI Prompts Quick buttons */}
-        <div className="border-t border-teal-800/50 pt-4">
-          <h3 className="text-xs font-bold tracking-wider text-teal-300 mb-3 font-mono uppercase">
+        <div className="border-t-2 border-slate-200/80 pt-4">
+          <h3 className="text-sm font-cartoon tracking-wider text-slate-800 mb-2">
             Escenarios de IA Rápidos
           </h3>
-          <p className="text-[9px] text-teal-200/60 mb-3 font-mono leading-relaxed">
-            Envía una pregunta prediseñada para ver a BMO responder con su voz (cuerpo del chat) y cambiar sus emociones de forma automática según la respuesta generada por Gemini.
+          <p className="text-[10.5px] text-slate-600 font-bold leading-relaxed mb-3">
+            Inicia un diálogo rápido para ver a BMO responder con voz y adaptar su emoción por inteligencia artificial de forma automática.
           </p>
 
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-[290px] overflow-y-auto pr-1 flex flex-col scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
             {predefinedScenarios.map((sc, i) => (
               <button
                 key={i}
                 id={`btn-quick-prompt-${i}`}
-                onClick={() => onAskBmoPredefined(sc.prompt)}
-                className="w-full text-left p-2.5 rounded-lg bg-teal-900/30 border border-teal-800/40 text-teal-100 hover:bg-teal-900/60 active:scale-[0.98] transition-all text-xs flex items-center justify-between"
+                onClick={() => onAskBmoPredefined(sc.text, sc.expression as Expression)}
+                className="w-full text-left py-2.5 px-3 rounded-xl bg-[#FFF] border-2 border-[#1E293B] hover:bg-[#E2F5FF] active:translate-y-0.5 transition-all text-xs font-bold flex flex-col gap-0.5 shadow-[0_2.5px_0_#1E293B]"
               >
-                <span className="font-medium truncate">{sc.title}</span>
-                <span className="text-[9.5px] font-bold text-teal-400 font-mono bg-[#152019] px-2 py-0.5 rounded-full border border-teal-900/80">
-                  IA
-                </span>
+                <div className="flex items-center justify-between w-full">
+                  <span className="font-bold text-slate-800 truncate pr-1">{sc.title}</span>
+                  <span className="text-[9px] font-black text-[#1E293B] font-mono bg-[#FFF275] border-2 border-[#1E293B] px-1.5 py-0.5 rounded-full shadow-sm shrink-0 font-sans">
+                    Voz
+                  </span>
+                </div>
+                {sc.episode && (
+                  <span className="text-[9.5px] text-slate-400 font-semibold italic truncate">
+                    ep. {sc.episode}
+                  </span>
+                )}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="border-t border-teal-800/40 pt-3 mt-4 flex items-center justify-between text-[9px] text-teal-500 font-mono">
-        <span>BMO V2.0 // RETRO SCREEN</span>
-        <span>STATUS: INLINE</span>
+      <div className="border-t-2 border-slate-200/60 pt-3 mt-4 flex items-center justify-between text-[9px] text-slate-500 font-bold font-mono">
+        <span>BMO V2.0 // CARTOON THEME</span>
+        <span className="flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+          ONLINE
+        </span>
       </div>
     </div>
   );

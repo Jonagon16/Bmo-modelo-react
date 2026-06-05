@@ -137,8 +137,14 @@ export default function BmoScreen({
     // If BMO is actively speaking (generating response), make the mouth talk dynamically
     if (isSpeaking) {
       if (expression === 'angry') {
+        const angryMouthStates = [
+          'M 210,214 L 290,214 A 10,10 0 0,1 290,234 L 210,234 A 10,10 0 0,1 210,214 Z',
+          'M 210,208 L 290,208 A 16,16 0 0,1 290,240 L 210,240 A 16,16 0 0,1 210,208 Z',
+          'M 210,214 L 290,214 A 10,10 0 0,1 290,234 L 210,234 A 10,10 0 0,1 210,214 Z',
+          'M 210,210 L 290,210 A 14,14 0 0,1 290,238 L 210,238 A 14,14 0 0,1 210,210 Z',
+        ];
         return {
-          d: 'M 210,214 L 290,214 A 10,10 0 0,1 290,234 L 210,234 A 10,10 0 0,1 210,214 Z',
+          d: angryMouthStates[speakCycle],
           strokeWidth: 4.5,
           fill: '#FFFFFF',
           color: '#1B2C24',
@@ -741,13 +747,13 @@ export default function BmoScreen({
 
         {/* -------------------- SOLID ANGRY GRITTING TEETH RIBBON -------------------- */}
         {mouth.isAngryRibbon && (
-          <g id="bmo-angry-teeth-grit">
+          <g id="bmo-angry-teeth-grit" clipPath="url(#bmo-mouth-clip)">
             {/* Divider lines representing clenching individual square teeth slots - Row 1 Col 1 */}
-            <line x1="222" y1="213" x2="222" y2="233" stroke="#1B2C24" strokeWidth="3" strokeLinecap="round" />
-            <line x1="236" y1="213" x2="236" y2="233" stroke="#1B2C24" strokeWidth="3" strokeLinecap="round" />
-            <line x1="250" y1="213" x2="250" y2="233" stroke="#1B2C24" strokeWidth="3" strokeLinecap="round" />
-            <line x1="264" y1="213" x2="264" y2="233" stroke="#1B2C24" strokeWidth="3" strokeLinecap="round" />
-            <line x1="278" y1="213" x2="278" y2="233" stroke="#1B2C24" strokeWidth="3" strokeLinecap="round" />
+            <line x1="222" y1="200" x2="222" y2="250" stroke="#1B2C24" strokeWidth="3" strokeLinecap="round" />
+            <line x1="236" y1="200" x2="236" y2="250" stroke="#1B2C24" strokeWidth="3" strokeLinecap="round" />
+            <line x1="250" y1="200" x2="250" y2="250" stroke="#1B2C24" strokeWidth="3" strokeLinecap="round" />
+            <line x1="264" y1="200" x2="264" y2="250" stroke="#1B2C24" strokeWidth="3" strokeLinecap="round" />
+            <line x1="278" y1="200" x2="278" y2="250" stroke="#1B2C24" strokeWidth="3" strokeLinecap="round" />
           </g>
         )}
 

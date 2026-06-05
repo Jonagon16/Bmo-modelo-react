@@ -14,7 +14,8 @@ import {
   Github,
   Maximize2,
   Minimize2,
-  Tv
+  Tv,
+  Mic
 } from 'lucide-react';
 import BmoConsole from './components/BmoConsole';
 import BmoControls from './components/BmoControls';
@@ -45,20 +46,29 @@ const Cloud = ({ delay = 0, y = 10, scale = 1, speed = 25 }) => (
 
 export default function App() {
   const [expression, setExpression] = useState<Expression>('idle');
-  const [captionText, setCaptionText] = useState<string>('¡Hola! Soy BMO. ¡Presiona mi botón de Hablar para charlar o usa el de reacciones de la derecha! O haz clic en mi pantalla.');
+  const [captionText, setCaptionText] = useState<string>('¡Hola! Soy BMO. ¡Presiona mi botón de Hablar (A / TALK) en mi consola para hablarme por micrófono, o usa las reacciones de la derecha!');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [ttsEnabled, setTtsEnabled] = useState<boolean>(false);
+  const [ttsEnabled, setTtsEnabled] = useState<boolean>(true); // Let's enable TTS voice sounds by default for a lovely greeting experience!
   const [isTypingActive, setIsTypingActive] = useState<boolean>(false);
   const [secretError, setSecretError] = useState<string | null>(null);
   const [isOnlyFaceMode, setIsOnlyFaceMode] = useState<boolean>(false);
   const [isAudioSpeaking, setIsAudioSpeaking] = useState<boolean>(false);
   const [lastActivity, setLastActivity] = useState<number>(Date.now());
 
+  // Speech Recognition States
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [isContinuousListening, setIsContinuousListening] = useState<boolean>(false);
+  const [showMinimizeButton, setShowMinimizeButton] = useState<boolean>(false);
+  const [isFullscreenListening, setIsFullscreenListening] = useState<boolean>(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typewriterTimerRef = useRef<NodeJS.Timeout | null>(null);
   const speakTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const fullscreenRecRef = useRef<any>(null);
+  const minimizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const updateActivity = () => {
     setLastActivity(Date.now());
@@ -106,6 +116,177 @@ export default function App() {
       window.speechSynthesis.getVoices();
     }
   }, []);
+
+  // Standard Speech Recognition initialization (for A / TALK button click)
+  useEffect(() => {
+    const SpeechRecClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecClass) {
+      const rec = new SpeechRecClass();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = 'es-MX'; // default to Spanish Latino BMO
+
+      rec.onstart = () => {
+        setIsListening(true);
+        setExpression('blushing');
+        setCaptionText('BMO te está escuchando con atención... ¡Dime algo!');
+      };
+
+      rec.onend = () => {
+        setIsListening(false);
+      };
+
+      rec.onresult = (event: any) => {
+        const text = event.results[0][0].transcript;
+        if (text && text.trim()) {
+          setCaptionText(`Escuché: "${text}"`);
+          handleSendMessage(text);
+        }
+      };
+
+      rec.onerror = (event: any) => {
+        console.warn("Speech recognition error:", event.error);
+        setIsListening(false);
+        setExpression('idle');
+      };
+
+      recognitionRef.current = rec;
+    }
+  }, []);
+
+  // Synchronize state values to refs to avoid stale closures in listeners
+  const isLoadingRef = React.useRef(isLoading);
+  const isAudioSpeakingRef = React.useRef(isAudioSpeaking);
+  const isTypingActiveRef = React.useRef(isTypingActive);
+
+  React.useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
+
+  React.useEffect(() => {
+    isAudioSpeakingRef.current = isAudioSpeaking;
+  }, [isAudioSpeaking]);
+
+  React.useEffect(() => {
+    isTypingActiveRef.current = isTypingActive;
+  }, [isTypingActive]);
+
+  // Cleanup hook for fullscreen events and triggers
+  useEffect(() => {
+    return () => {
+      if (minimizeTimeoutRef.current) {
+        clearTimeout(minimizeTimeoutRef.current);
+      }
+      if (fullscreenRecRef.current) {
+        try {
+          fullscreenRecRef.current.stop();
+        } catch (e) {}
+      }
+    };
+  }, []);
+
+  const handleFullscreenTap = () => {
+    setShowMinimizeButton(true);
+    if (minimizeTimeoutRef.current) {
+      clearTimeout(minimizeTimeoutRef.current);
+    }
+    minimizeTimeoutRef.current = setTimeout(() => {
+      setShowMinimizeButton(false);
+    }, 2000);
+  };
+
+  const handleFullscreenPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    
+    // Toggle the minimize button to appear when tapping
+    handleFullscreenTap();
+
+    if (isLoading || isTypingActive || isAudioSpeaking) return;
+
+    const SpeechRecClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecClass) {
+      if (fullscreenRecRef.current) {
+        try { fullscreenRecRef.current.stop(); } catch (err) {}
+      }
+
+      const rec = new SpeechRecClass();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = 'es-MX';
+
+      rec.onstart = () => {
+        setIsFullscreenListening(true);
+        setExpression('thinking');
+        setCaptionText('Escuchando...');
+      };
+
+      rec.onresult = (event: any) => {
+        const text = event.results[0][0].transcript;
+        if (text && text.trim()) {
+          setCaptionText(`Escuché: "${text}"`);
+          handleSendMessage(text);
+        }
+      };
+
+      rec.onerror = (event: any) => {
+        console.warn("Fullscreen mic error:", event.error);
+        setIsFullscreenListening(false);
+      };
+
+      rec.onend = () => {
+        setIsFullscreenListening(false);
+      };
+
+      fullscreenRecRef.current = rec;
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+        setIsAudioSpeaking(false);
+        rec.start();
+      } catch (err) {
+        console.warn("Error starting fullscreen rec:", err);
+      }
+    } else {
+      setCaptionText("¡Amigo, tu navegador no soporta Reconocimiento de Voz! Usa Chrome o Edge para hablar con BMO.");
+    }
+  };
+
+  const handleFullscreenPointerUp = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    if (fullscreenRecRef.current) {
+      try {
+        fullscreenRecRef.current.stop();
+      } catch (err) {}
+    }
+  };
+
+  // Method to start/stop listening
+  const startSpeechListening = () => {
+    updateActivity();
+    const SpeechRecClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecClass) {
+      setCaptionText("¡Amigo, tu navegador no soporta Reconocimiento de Voz! Usa Chrome o Edge para hablar con BMO.");
+      return;
+    }
+
+    if (isListening) {
+      try {
+        recognitionRef.current?.stop();
+      } catch (e) {}
+    } else {
+      try {
+        // Cancel any current speech synthesis to avoid hearing itself
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+        setIsAudioSpeaking(false);
+        recognitionRef.current?.start();
+      } catch (e) {
+        console.warn("Could not start recognition:", e);
+      }
+    }
+  };
 
   // Use SpeechSynthesis to speak BMO replies, and set isAudioSpeaking to keep mouth moving
   const speakTextRef = (text: string) => {
@@ -210,7 +391,7 @@ export default function App() {
   };
 
   // Send message to BMO
-  const handleSendMessage = async (textToSend: string) => {
+  const handleSendMessage = async (textToSend: string, isShortMode = false) => {
     if (!textToSend.trim() || isLoading) return;
 
     const userMsgId = Date.now().toString();
@@ -240,6 +421,7 @@ export default function App() {
         body: JSON.stringify({
           message: textToSend,
           history: messages.slice(-10), // Send last 10 messages context
+          isShortMode: isShortMode,
         }),
       });
 
@@ -310,8 +492,24 @@ export default function App() {
     speakTextRef(messagesDict[expr] || "¡Mírame hablar!");
   };
 
-  const handleAskPredefined = (scenarioPrompt: string) => {
-    handleSendMessage(scenarioPrompt);
+  const handleAskPredefined = (text: string, expr: Expression) => {
+    updateActivity();
+    
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    
+    const bmoMsg: ChatMessage = {
+      id: (Date.now() + 1).toString(),
+      sender: 'bmo',
+      text: text,
+      expression: expr,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setMessages((prev) => [...prev, bmoMsg]);
+    
+    triggerTypewriter(text, expr);
   };
 
   const handleDpadPress = (direction: 'up' | 'down' | 'left' | 'right') => {
@@ -329,15 +527,7 @@ export default function App() {
 
   const handleButtonPress = (btnName: string) => {
     if (btnName === 'circle_red') {
-      // Prompt user to talk
-      const quotes = [
-        "¿Quién quiere jugar videojuegos hoy con BMO?",
-        "¡Presiona el botón de enviar para chatear conmigo!",
-        "La vida es genial cuando somos mejores amigos.",
-        "A veces, cuando soy muy feliz, mis circuitos bailan."
-      ];
-      const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-      triggerTypewriter(randomQuote, 'excited');
+      startSpeechListening();
     } else if (btnName === 'circle_green') {
       // Tell a short cheesy joke
       const jokes = [
@@ -440,10 +630,24 @@ export default function App() {
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2.5 rounded-xl border-2 border-[#1E293B] bg-[#E2F5FF] hover:bg-[#FFF] text-blue-950 font-bold transition-all flex items-center gap-2 text-xs cursor-pointer adventure-button-shadow"
+            title="Repositorio original de base"
           >
             <Github className="w-4 h-4" />
-            <span className="hidden sm:inline font-bold">REPO</span>
+            <span className="hidden sm:inline font-bold">REPO BASE</span>
             <ExternalLink className="w-3 h-3 text-blue-700/50" />
+          </a>
+
+          {/* Github Official Repo Link */}
+          <a
+            href="https://github.com/Jonagon16/Bmo-modelo-react"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2.5 rounded-xl border-2 border-[#1E293B] bg-[#FFF275] hover:bg-[#FFF] text-[#1E293B] font-bold transition-all flex items-center gap-2 text-xs cursor-pointer adventure-button-shadow"
+            title="Repositorio oficial modificado"
+          >
+            <Github className="w-4 h-4 text-[#1E293B]" />
+            <span className="hidden sm:inline font-bold">REPO OFICIAL</span>
+            <ExternalLink className="w-3 h-3 text-yellow-800/50" />
           </a>
         </div>
       </header>
@@ -470,7 +674,7 @@ export default function App() {
             <BmoConsole 
               expression={expression}
               captionText={captionText}
-              isCustomResponseActive={isLoading || isTypingActive || isAudioSpeaking}
+              isCustomResponseActive={isAudioSpeaking}
               onDpadPress={handleDpadPress}
               onButtonPress={handleButtonPress}
               onPowerToggle={handlePowerToggle}
@@ -582,18 +786,33 @@ export default function App() {
                   e.preventDefault();
                   handleSendMessage(input);
                 }}
-                className="p-3 bg-[#FFFBF0] border-t-4 border-[#1E293B] flex items-center space-x-2.5"
+                className="p-3 bg-[#FFFBF0] border-t-4 border-[#1E293B] flex items-center space-x-2"
               >
                 <input
                   id="chat-input-text-field"
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={isLoading ? "BMO está pensando..." : "Escribe tu mensaje a BMO..."}
+                  placeholder={isLoading ? "BMO está pensando..." : "Escribe tu mensaje o apreta el botón Mic..."}
                   disabled={isLoading}
                   autoComplete="off"
                   className="flex-grow bg-[#FFF]/80 border-2 border-[#1E293B] rounded-2xl px-4 py-2.5 text-xs text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#5BCAFF] disabled:opacity-50 transition-shadow duration-300"
                 />
+
+                <button
+                  id="btn-voice-input-mic"
+                  type="button"
+                  onClick={startSpeechListening}
+                  disabled={isLoading}
+                  className={`rounded-2xl border-2 border-[#1E293B] p-2.5 h-11 w-11 flex items-center justify-center select-none active:scale-95 disabled:opacity-40 disabled:scale-100 transition-all cursor-pointer shadow-[0_2px_0_#1E293B] ${
+                    isListening 
+                      ? 'bg-red-500 animate-pulse text-white' 
+                      : 'bg-[#FFF8D2] hover:bg-yellow-100 text-yellow-950 font-bold'
+                  }`}
+                  title="Presiona para hablarle a BMO"
+                >
+                  <Mic className={`w-4 h-4 ${isListening ? 'text-white' : 'text-[#1E293B]'}`} />
+                </button>
                 
                 <button
                   id="btn-send-message"
@@ -617,7 +836,7 @@ export default function App() {
             <div className="text-[12px] leading-relaxed text-slate-800 font-semibold direct-guide">
               <span className="text-[#a16207] font-extrabold tracking-wider uppercase block mb-1">Guía del BMO interactivo:</span>
               <ul className="list-disc pl-4 space-y-1 text-slate-700">
-                <li>Haz clic en la <span className="text-sky-700 font-bold uppercase">Pantalla de BMO</span> para expandir BMO a rostro completo! Puedes salir apretando <kbd className="bg-slate-200 border border-slate-400 rounded px-1 text-[10px]">Esc</kbd> o haciendo clic de nuevo.</li>
+                <li>Haz clic en la <span className="text-sky-700 font-bold uppercase">Pantalla de BMO</span> para expandir BMO a rostro completo. En este modo, mantén presionada la pantalla para hablarle y dale un toque rápido para revelar el botón para salir.</li>
                 <li>Presiona los botones de la consola física (A para charlar, B para chistes curiosos, o el D-Pad verde para emociones).</li>
                 <li>Activa el botón de <span className="text-[#13613b] font-bold">VOZ</span> y habla con BMO: ¡usará su tono de voz clásico de niño consola!</li>
               </ul>
@@ -629,9 +848,30 @@ export default function App() {
       </main>
 
       {/* Footer system details */}
-      <footer className="max-w-6xl w-full mx-auto mt-8 border-t-2 border-[#1e293b]/20 pt-4 flex flex-col sm:flex-row justify-between items-center text-[11px] font-bold text-slate-600 gap-2 z-10 relative">
-        <span className="font-cartoon uppercase font-bold">© Consola BMO v2.0 - Hora de Aventura Estilo</span>
-        <span>Recreado con React, Framer Motion y Gemini AI</span>
+      <footer className="max-w-6xl w-full mx-auto mt-8 border-t-2 border-[#1e293b]/20 pt-5 flex flex-col md:flex-row justify-between items-center text-xs font-bold text-slate-600 gap-4 z-10 relative">
+        <div className="flex flex-col items-center md:items-start space-y-1">
+          <span className="font-cartoon uppercase font-bold text-slate-800">© Consola BMO v2.0 - Versión Cartoon</span>
+          <span className="text-[10px] text-slate-500 font-extrabold tracking-wide uppercase">
+            Generado con <a href="https://ai.studio/build" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">Google AI Studio</a> y desplegado en Cloud Run
+          </span>
+        </div>
+        
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
+          <a href="https://github.com/Jonagon16/Bmo-modelo-react" target="_blank" rel="noopener noreferrer" className="hover:text-[#1E293B] hover:underline flex items-center gap-1">
+            Repo Oficial
+            <ExternalLink className="w-2.5 h-2.5" />
+          </a>
+          <span>•</span>
+          <a href="https://github.com/brenpoly/be-more-agent" target="_blank" rel="noopener noreferrer" className="hover:text-[#1E293B] hover:underline flex items-center gap-1">
+            Repo Base
+            <ExternalLink className="w-2.5 h-2.5" />
+          </a>
+          <span>•</span>
+          <a href="https://ais-pre-f2wqnwj3lcv2z3br2ulhnq-444598480512.us-east1.run.app" target="_blank" rel="noopener noreferrer" className="hover:text-[#1E293B] hover:underline flex items-center gap-1">
+            Esta App Link
+            <ExternalLink className="w-2.5 h-2.5" />
+          </a>
+        </div>
       </footer>
 
       {/* ==================== THE "ONLY FACE" FULLSCREEN MODULE OVERLAY ==================== */}
@@ -642,7 +882,9 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-[#162B23] flex flex-col items-center justify-center p-4 md:p-12 cursor-pointer select-none"
-            onClick={() => setIsOnlyFaceMode(false)}
+            onPointerDown={handleFullscreenPointerDown}
+            onPointerUp={handleFullscreenPointerUp}
+            onPointerLeave={handleFullscreenPointerUp}
           >
             {/* Absolute floating clouds in theater face screen backdrop */}
             <div className="absolute inset-0 pointer-events-none opacity-10">
@@ -650,22 +892,26 @@ export default function App() {
               <div className="absolute bottom-[13%] right-[8%] w-72 h-32 bg-teal-300 rounded-full blur-2xl" />
             </div>
 
-            {/* Minimize button in the top left corner */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation(); // Stop propagating back to parent overlay close trigger click
-                setIsOnlyFaceMode(false);
-              }}
-              className="absolute top-6 left-6 z-50 p-3.5 rounded-full bg-[#25473D] hover:bg-[#1E3A31] text-[#C1EECB] border-4 border-[#10231D] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center shadow-2xl"
-              title="Cerrar el modo rostro completo (Esc)"
-            >
-              <Minimize2 className="w-6 h-6" />
-            </button>
-
-            {/* Extra guide notification */}
-            <div className="absolute top-8 text-center text-[#9BE5FF] font-bold text-[11px] tracking-widest uppercase opacity-60 pointer-events-none">
-              Apreta ESC o haz click en la cara para salir del modo cine
-            </div>
+            {/* Minimize button - shown dynamically for 2 seconds on tapping */}
+            <AnimatePresence>
+              {showMinimizeButton && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  onPointerDown={(e) => e.stopPropagation()} // Stop voice listener from starting when clicking minimize
+                  onPointerUp={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOnlyFaceMode(false);
+                  }}
+                  className="absolute top-6 left-6 z-50 p-4 rounded-full bg-[#1e3a31] hover:bg-[#12241e] text-[#C1EECB] border-4 border-[#10231D] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center shadow-2xl"
+                  title="Cerrar el modo rostro completo"
+                >
+                  <Minimize2 className="w-6 h-6" />
+                </motion.button>
+              )}
+            </AnimatePresence>
 
             {/* Responsive Screen Housing sizing for face focus */}
             <motion.div
@@ -674,22 +920,14 @@ export default function App() {
               exit={{ scale: 0.9, y: 20 }}
               transition={{ type: 'spring', stiffness: 120, damping: 14 }}
               className="w-full max-w-4xl aspect-[4/3] rounded-[48px] overflow-hidden border-[18px] border-[#162E25] shadow-[0_20px_50px_rgba(0,0,0,0.45)] bg-emerald-950 relative"
-              onClick={(e) => {
-                e.stopPropagation(); // prevent double toggle on clicking screen container
-                setIsOnlyFaceMode(false);
-              }}
+              onPointerDown={handleFullscreenPointerDown}
+              onPointerUp={handleFullscreenPointerUp}
+              onPointerLeave={handleFullscreenPointerUp}
             >
               <BmoScreen
                 expression={expression}
-                isCustomResponseActive={isLoading || isTypingActive || isAudioSpeaking}
+                isCustomResponseActive={isAudioSpeaking}
               />
-
-              {/* Subtitle caption displayed under/within screen beautifully for active dialog visibility */}
-              {captionText && (
-                <div className="absolute bottom-10 left-10 right-10 text-center text-[#1B2C24] font-extrabold text-sm md:text-xl tracking-wide bg-[#C1EECB]/90 backdrop-blur-sm px-6 py-4 rounded-[24px] border-4 border-[#25473D] shadow-lg pointer-events-none leading-relaxed">
-                  {captionText}
-                </div>
-              )}
             </motion.div>
           </motion.div>
         )}
