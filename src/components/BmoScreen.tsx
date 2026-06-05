@@ -467,6 +467,41 @@ export default function BmoScreen({
           </g>
         )}
 
+        {/* Dripping tears/droplets for sad ("remojada") expression */}
+        {expression === 'sad' && (
+          <g id="bmo-sad-tears" opacity="0.85">
+            {/* Left eye tear */}
+            <motion.path
+              animate={{
+                y: [0, 15, 30, 40],
+                opacity: [0, 1, 0.8, 0],
+              }}
+              transition={{
+                duration: 2.2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+              d="M 158,155 C 158,155 152,168 152,174 C 152,178 155,181 159,181 C 163,181 166,178 166,174 C 166,168 160,155 160,155 Z"
+              fill="#52B6FF"
+            />
+            {/* Right eye tear */}
+            <motion.path
+              animate={{
+                y: [0, 15, 30, 40],
+                opacity: [0, 1, 0.8, 0],
+              }}
+              transition={{
+                duration: 2.2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: 1.1,
+              }}
+              d="M 338,155 C 338,155 332,168 332,174 C 332,178 335,181 339,181 C 343,181 346,178 346,174 C 346,168 340,155 340,155 Z"
+              fill="#52B6FF"
+            />
+          </g>
+        )}
+
         {expression === 'angry' && (
           <g id="bmo-angry-eyebrows">
             <motion.line
@@ -748,6 +783,8 @@ export default function BmoScreen({
         {/* -------------------- SOLID ANGRY GRITTING TEETH RIBBON -------------------- */}
         {mouth.isAngryRibbon && (
           <g id="bmo-angry-teeth-grit" clipPath="url(#bmo-mouth-clip)">
+            {/* White background so the gritting teeth slots appear filled with white */}
+            {mouth.d && <path d={mouth.d} fill="#FFFFFF" />}
             {/* Divider lines representing clenching individual square teeth slots - Row 1 Col 1 */}
             <line x1="222" y1="200" x2="222" y2="250" stroke="#1B2C24" strokeWidth="3" strokeLinecap="round" />
             <line x1="236" y1="200" x2="236" y2="250" stroke="#1B2C24" strokeWidth="3" strokeLinecap="round" />

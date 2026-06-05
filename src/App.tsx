@@ -44,6 +44,9 @@ const Cloud = ({ delay = 0, y = 10, scale = 1, speed = 25 }) => (
   </motion.div>
 );
 
+// TERMINATED: Cambia a true para forzar el modo rostro completo eterno (sin opción de salir)
+const TERMINATED = false;
+
 export default function App() {
   const [expression, setExpression] = useState<Expression>('idle');
   const [captionText, setCaptionText] = useState<string>('¡Hola! Soy BMO. ¡Presiona mi botón de Hablar (A / TALK) en mi consola para hablarme por micrófono, o usa las reacciones de la derecha!');
@@ -69,6 +72,7 @@ export default function App() {
   const recognitionRef = useRef<any>(null);
   const fullscreenRecRef = useRef<any>(null);
   const minimizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const updateActivity = () => {
     setLastActivity(Date.now());
@@ -81,6 +85,7 @@ export default function App() {
 
   // Handle Escape Key to exit "Only Face" fullscreen modes
   useEffect(() => {
+    if (TERMINATED) return; // Prevent escaping if we are locked in cosmic/terminated screen role
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsOnlyFaceMode(false);
@@ -304,6 +309,7 @@ export default function App() {
       if (!ttsEnabled) {
         // Safe simulation of speaking length to let mouth animate
         setIsAudioSpeaking(true);
+        activeUtteranceRef.current = null;
         const estimatedSeconds = Math.max(1600, Math.min(6000, text.length * 60));
         speakTimerRef.current = setTimeout(() => {
           setIsAudioSpeaking(false);
@@ -314,6 +320,7 @@ export default function App() {
 
       const cleanText = text.replace(/[*_#]/g, ''); // strip markdown chars
       const utterance = new SpeechSynthesisUtterance(cleanText);
+      activeUtteranceRef.current = utterance;
       
       const voices = window.speechSynthesis.getVoices();
       // Try to find Spanish Latino (Mexican) voice first for genuine BMO latino vibe, else any Spanish
@@ -343,13 +350,19 @@ export default function App() {
       };
 
       utterance.onend = () => {
-        setIsAudioSpeaking(false);
-        setExpression('idle');
+        if (activeUtteranceRef.current === utterance) {
+          setIsAudioSpeaking(false);
+          setExpression('idle');
+          activeUtteranceRef.current = null;
+        }
       };
 
       utterance.onerror = () => {
-        setIsAudioSpeaking(false);
-        setExpression('idle');
+        if (activeUtteranceRef.current === utterance) {
+          setIsAudioSpeaking(false);
+          setExpression('idle');
+          activeUtteranceRef.current = null;
+        }
       };
 
       window.speechSynthesis.speak(utterance);
@@ -464,32 +477,28 @@ export default function App() {
 
   // Manual select expression from reaction pad
   const handleSelectExpression = (expr: Expression) => {
-    if (typewriterTimerRef.current) {
-      clearInterval(typewriterTimerRef.current);
-    }
-    setIsTypingActive(false);
-    setExpression(expr);
+    updateActivity();
     
-    // Choose nice friendly label explanations for BMO screen
+    // Choose nice friendly label explanations to speak and typewriter
     const messagesDict: Record<Expression, string> = {
-      idle: "Ustedes son geniales. ¡Me siento muy feliz y tranquilo!",
-      talking: "¡Mírame! Mis algoritmos vocales de modulación están activos.",
-      thinking: "Hmm... Debería intentar optimizar la velocidad de mis ventiladores.",
-      sad: "Oh no... ¿Me quedé sin baterías o borraste mi partida guardada?",
-      angry: "¡No robes mis controles! ¡BMO está listo para la acción cibernética!",
+      idle: "¿Quién quiere jugar videojuegos?",
+      talking: "¡Esto sí computa! Siento la adrenalina de los 16 bits.",
+      thinking: "Cuando pasan cosas malas... debemos encontrar la luz y seguir adelante.",
+      sad: "¡Finn, eres un tonto-tonto-tonto-tontuelo pajaruelo!",
+      angry: "¡Si alguien intenta herir a Finn... lo mataré!",
       excited: "¡Guaooo! ¡Esto es súper divertido! ¡Vamos de aventuras!",
-      surprised: "¡Rayos y centellas! ¿Eso es un nuevo juego de 16-bits para mí?",
-      sleepy: "Aaaah... *bostezo*. Buenas noches... apagando transistores...",
+      surprised: "¡Mi arte es un arma! ¡Guaooo!",
+      sleepy: "Batería baja. Apagando sistemas... Buenas noches...",
       blushing: "Oh, eres muy amable... ¡BMO te quiere mucho, amigo!",
-      wink: "¡Guiño! ¡Soy un robot con mucho estilo, oye!",
-      love: "¡Ohhh! ¡He cargado mi módulo de amor al cien por ciento para ti!",
-      cool: "Detectando altos niveles de estilo retro. ¡BMO detective está en el caso!",
+      wink: "Creo que estoy muriendome. ¡Pero no importa, BMO siempre regresa!",
+      love: "¡Perritos! ¡Perritos! ¡Perritos! ¡Son tan calientitos y suaves!",
+      cool: "Conozco esa mirada... Acabas de liquidar a alguien.",
       scared: "¡Socorro! ¡Hay un monstruo en el pozo! ¡Jake, ayúdame!",
-      glitch: "⚠️ CRITICAL SYSTEM WARP // ERROR DE VOLTAJE DEL RETRO-MONITOR",
+      glitch: "⚠️ ¡Bzzzt! ¡Ay! Mis circuitos se enredaron... ¡Error de retro-voltaje!",
     };
     
-    setCaptionText(messagesDict[expr] || "¡Mírame hablar!");
-    speakTextRef(messagesDict[expr] || "¡Mírame hablar!");
+    const text = messagesDict[expr] || "¡Mírame hablar!";
+    triggerTypewriter(text, expr);
   };
 
   const handleAskPredefined = (text: string, expr: Expression) => {
@@ -568,6 +577,39 @@ export default function App() {
     setCaptionText('Memoria del chat borrada. ¡Hola otra vez, amigo!');
   };
 
+  if (TERMINATED) {
+    return (
+      <div 
+        className="fixed inset-0 z-50 bg-[#162B23] flex flex-col items-center justify-center p-4 md:p-[20px] select-none"
+        onPointerDown={handleFullscreenPointerDown}
+        onPointerUp={handleFullscreenPointerUp}
+        onPointerLeave={handleFullscreenPointerUp}
+      >
+        {/* Absolute floating clouds in theater face screen backdrop */}
+        <div className="absolute inset-0 pointer-events-none opacity-10">
+          <div className="absolute top-[10%] left-[5%] w-48 h-20 bg-emerald-300 rounded-full blur-xl" />
+          <div className="absolute bottom-[13%] right-[8%] w-72 h-32 bg-teal-300 rounded-full blur-2xl" />
+        </div>
+
+        {/* Responsive Screen Housing sizing for face focus */}
+        <motion.div
+          initial={{ scale: 0.95 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 120, damping: 14 }}
+          className="w-full max-w-4xl aspect-[4/3] rounded-[48px] overflow-hidden border-[18px] border-[#162E25] shadow-[0_20px_50px_rgba(0,0,0,0.45)] bg-emerald-950 relative"
+          onPointerDown={handleFullscreenPointerDown}
+          onPointerUp={handleFullscreenPointerUp}
+          onPointerLeave={handleFullscreenPointerUp}
+        >
+          <BmoScreen
+            expression={expression}
+            isCustomResponseActive={isAudioSpeaking}
+          />
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div 
       onPointerDown={updateActivity}
@@ -643,10 +685,10 @@ export default function App() {
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2.5 rounded-xl border-2 border-[#1E293B] bg-[#FFF275] hover:bg-[#FFF] text-[#1E293B] font-bold transition-all flex items-center gap-2 text-xs cursor-pointer adventure-button-shadow"
-            title="Repositorio oficial modificado"
+            title="Repositorio de fan modificado (Jonagon16)"
           >
             <Github className="w-4 h-4 text-[#1E293B]" />
-            <span className="hidden sm:inline font-bold">REPO OFICIAL</span>
+            <span className="hidden sm:inline font-bold">REPO FAN (JONAGON16)</span>
             <ExternalLink className="w-3 h-3 text-yellow-800/50" />
           </a>
         </div>
@@ -858,7 +900,7 @@ export default function App() {
         
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
           <a href="https://github.com/Jonagon16/Bmo-modelo-react" target="_blank" rel="noopener noreferrer" className="hover:text-[#1E293B] hover:underline flex items-center gap-1">
-            Repo Oficial
+            Repo Fan (Jonagon16)
             <ExternalLink className="w-2.5 h-2.5" />
           </a>
           <span>•</span>

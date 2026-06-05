@@ -7,7 +7,7 @@ Este proyecto ha sido mejorado y generado conjuntamente con **Google AI Studio**
 ---
 
 ## 🔗 Enlaces Importantes
-- **Repositorio Oficial (Jonagon16):** [https://github.com/Jonagon16/Bmo-modelo-react](https://github.com/Jonagon16/Bmo-modelo-react)
+- **Repositorio de Fan (Jonagon16):** [https://github.com/Jonagon16/Bmo-modelo-react](https://github.com/Jonagon16/Bmo-modelo-react)
 - **Repositorio Original Base:** [https://github.com/brenpoly/be-more-agent](https://github.com/brenpoly/be-more-agent)
 - **Generado Con:** [Google AI Studio](https://ai.studio/build)
 - **Aplicación en Producción:** [https://ais-pre-f2wqnwj3lcv2z3br2ulhnq-444598480512.us-east1.run.app](https://ais-pre-f2wqnwj3lcv2z3br2ulhnq-444598480512.us-east1.run.app)
