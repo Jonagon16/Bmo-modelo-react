@@ -40,11 +40,19 @@ Para que BMO mueva la boca al compás del audio hablado real de manera fluida y 
 
 Para una inmersión completa tipo cosplay o dispositivo dedicado, tienes a tu disposición un botón de **SOLO LA CARA**:
 
-1. **Esconder Subtítulos y Controles:** Al activar este terminal, se oculta toda la interfaz web, el chat y el panel de control. No hace falta que se vea en pantalla el texto que está diciendo, permitiendo apreciar a BMO de forma unánime y limpia.
-2. **Escucha y Reconocimiento de Voz Continuos:**
-   - La pantalla ejecuta un circuito cerrado en bucle de reconocimiento de voz (`SpeechRecognition`).
-   - El micrófono permanece activo, ignorando el propio audio cuando BMO habla para evitar el eco/bucle de retroalimentamiento.
-3. **Palabra Clave de Activación (Wake Word):**
-   - BMO te escuchará pacientemente. Solo responderá y enviará tus palabras a Gemini cuando digas su nombre: **"BMO"**, **"bimo"** o **"vimo"**.
-4. **Respuestas Sintetizadas Cortas y Tiernas:**
-   - En este modo de manos libres, la llamada al backend activa automáticamente la bandera `isShortMode`. El servidor instruye a Gemini a elaborar respuestas sumamente concisas y de una sola oración para emular un flujo conversacional rápido de asistente virtual.
+1. **Esconder Subtítulos y Controles:** Al activar este terminal, se oculta toda la interfaz web, el chat y el panel de control. No hace falta que se vea en pantalla el texto que está diciendo, permitiendo apreciar a BMO de forma unánime y limpia, sin textos explicativos ni avisos distractores de interfaz en la pantalla.
+2. **Control Walkie-Talkie (Push-to-Talk) Intuitivo:**
+   - Para evitar interferencias o falsos disparos del micrófono, la escucha se activa **manteniendo apretada la pantalla de BMO**. Al mantener pulsada la pantalla de BMO, el rostro cambia a la expresión de **pensando (thinking)**. Al soltarla, el mensaje se envía automáticamente.
+3. **Gestos de Navegación y Salida Segura:**
+   - Para salir del modo de pantalla completa sin interrumpir el flujo accidentalmente, dale **un toque rápido/clic a la pantalla**. Esto revelará un botón de minimizar (`Minimize2`) en la esquina superior izquierda que desaparecerá automáticamente después de 2 segundos. Debes pulsar este botón para volver al panel normal.
+
+---
+
+## 🔐 Variables de Entorno (Environment Variables)
+
+Para ejecutar este proyecto de forma local o desplegarlo en producción, necesitas configurar las siguientes variables de entorno:
+
+- **`GEMINI_API_KEY`**: Clave de API requerida para las llamadas a la Inteligencia Artificial de Gemini. En **AI Studio (Google Cloud)**, esta clave se inyecta de forma segura a nivel de servidor a través de la sección de Secretos, por lo que **nunca se expone ni se hardcodea en tu código frontend (cero fugas de tokens)**.
+- **`APP_URL`**: La URL donde se hospeda tu aplicación para autoconsulta y verificación.
+
+Puedes seguir la plantilla de ejemplo que dejamos en el archivo `.env.example` en la raíz del proyecto.
