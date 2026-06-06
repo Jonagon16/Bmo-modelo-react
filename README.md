@@ -36,15 +36,20 @@ Para que BMO mueva la boca al compás del audio hablado real de manera fluida y 
 
 ---
 
-## 🚀 Modo Fullscreen "Solo la Cara" (Rostro Terminado)
+## 🚀 Modos de Pantalla y Configuración (`TERMINATED`)
 
-Para una inmersión completa tipo cosplay o dispositivo dedicado, tienes a tu disposición un botón de **SOLO LA CARA**:
+La aplicación cuenta con una constante central llamada `TERMINATED` (ubicada en `/src/App.tsx`) que modifica el comportamiento visual y la operativa de la pantalla completa del BMO de la siguiente manera:
 
-1. **Esconder Subtítulos y Controles:** Al activar este terminal, se oculta toda la interfaz web, el chat y el panel de control. No hace falta que se vea en pantalla el texto que está diciendo, permitiendo apreciar a BMO de forma unánime y limpia, sin textos explicativos ni avisos distractores de interfaz en la pantalla.
-2. **Control Walkie-Talkie (Push-to-Talk) Intuitivo:**
-   - Para evitar interferencias o falsos disparos del micrófono, la escucha se activa **manteniendo apretada la pantalla de BMO**. Al mantener pulsada la pantalla de BMO, el rostro cambia a la expresión de **pensando (thinking)**. Al soltarla, el mensaje se envía automáticamente.
-3. **Gestos de Navegación y Salida Segura:**
-   - Para salir del modo de pantalla completa sin interrumpir el flujo accidentalmente, dale **un toque rápido/clic a la pantalla**. Esto revelará un botón de minimizar (`Minimize2`) en la esquina superior izquierda que desaparecerá automáticamente después de 2 segundos. Debes pulsar este botón para volver al panel normal.
+### 1. Con `TERMINATED = false` (Modo Estándar / Desarrollo)
+La aplicación carga la página completa con todas las herramientas de chat, tablero de sonido, selección de reacciones manuales y guía interactiva. 
+- Al hacer clic sobre la pantalla de BMO, esta se expande a pantalla completa.
+- **Control por Voz (Push-to-Talk):** Mantén presionada la pantalla para hablar (BMO cambia instantáneamente a la expresión de *pensando*). Al soltar la pantalla, el mensaje de voz es procesado y enviado.
+- **Salida:** Un toque rápido / clic en la pantalla revela temporalmente (por 2 segundos) el botón de minimizar en la esquina superior izquierda para regresar al panel general.
+
+### 2. Con `TERMINATED = true` (Modo Rostro Dedicado)
+La interfaz completa se elimina y la aplicación arranca de forma inmediata directamente en modo pantalla completa, sirviendo como un portal de rostro puro y limpio.
+- **Sin Controles:** No hay barras de navegación, campos de chat ni posibilidad de salir de la cara o minimizarla.
+- **Control por Voz Activo:** Sigue operativa la función Push-to-Talk (mantener presionado para hablar y cambiar a expresión de *pensando*, soltar para enviar). El rostro se comporta como un dispositivo inteligente puro.
 
 ---
 
